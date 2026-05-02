@@ -1,156 +1,128 @@
-# KisanAI — Crop Intelligence Platform
+# 🌾 KisanAI — Crop Intelligence Platform
 
-A full-stack agricultural intelligence platform that provides Indian farmers and agri-traders with real-time crop price trends, AI-powered price forecasts, weather risk analysis, and smart crop recommendations.
+A mobile-first crop intelligence platform for Indian farmers, providing real-time mandi prices, MSP comparison, weather risk, and smart crop recommendations — in Marathi and English.
 
 ---
 
 ## What It Does
 
-| Feature | Description |
+| Question | Answer |
 |---|---|
-| **Price Trends** | 7-day and 30-day historical price & arrival trends for 10 major Indian crops with Bull/Bear signals |
-| **Price Forecast** | 30-day price forecast using Facebook Prophet (with linear regression fallback) |
-| **Weather Risk** | 10-day weather risk analysis per district with farming advisories |
-| **Risk Analysis** | Composite risk score (green/yellow/red) with breakdown: supply, weather, volatility, seasonal |
-| **Crop Recommendations** | Top 3 crops to grow + crops to avoid, per district and season (Kharif/Rabi/Zaid) |
-| **Price Snapshot** | Live price table for all 10 crops with daily change % |
+| **काय पेरायचं?** (What to grow?) | Season-based crop recommendations with reasoning |
+| **कधी विकायचं?** (When to sell?) | Price trends + 30-day forecast |
+| **धोका किती?** (What's the risk?) | 🟢🟡🔴 risk score with breakdown |
+| **आजचे भाव** (Today's prices?) | Live mandi prices from Agmarknet |
 
 ---
 
-## Crops Covered
+## Live Data Sources
 
-Onion, Tomato, Potato, Wheat, Rice, Soybean, Cotton, Maize, Garlic, Chilli
-
-## Districts Supported
-
-Nashik, Pune, Nagpur, Solapur, Aurangabad, Kolhapur, Satara, Ahmednagar, Latur, Jalgaon (Maharashtra)
+| Data | Source | Update Frequency |
+|---|---|---|
+| Mandi prices (min/max/modal) | [Agmarknet](https://agmarknet.gov.in) via [data.gov.in](https://data.gov.in) | Daily |
+| 10-day weather forecast | [Open-Meteo](https://open-meteo.com) | Real-time |
+| Soil moisture & rainfall | [Open-Meteo](https://open-meteo.com) | Real-time |
+| MSP (Minimum Support Price) | Govt of India — CCEA announcements | Annual |
+| District crop suitability | DES Maharashtra agricultural statistics | Static |
 
 ---
 
-## How to Run
+## Features
+
+- **Live Agmarknet prices** — fetches real mandi data from data.gov.in API
+- **MSP Comparison** — shows if current price is above/below government guaranteed MSP for Wheat, Rice, Maize, Soybean, Cotton
+- **District Suitability** — tells farmers how suitable their district is for each crop (e.g. Nashik scores 95/100 for Onion)
+- **Real weather** — 10-day forecast with soil moisture, rainfall risk, irrigation advice from Open-Meteo
+- **Price Forecast** — 30-day price range prediction using Facebook Prophet
+- **Risk Scoring** — composite risk (supply + weather + volatility + seasonal)
+- **Marathi + English** — full language toggle
+- **Voice output** — 🔊 tap to hear advice in Marathi (Web Speech API)
+- **Mobile-first UI** — designed for low-end Android phones
+
+---
+
+## Quick Start
 
 ### Prerequisites
-- [Docker](https://www.docker.com/get-started) and [Docker Compose](https://docs.docker.com/compose/) installed
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- A free API key from [data.gov.in](https://data.gov.in) → My Account → API Key
 
-### Start the platform
+### Run
 
 ```bash
-cd App2
+# 1. Clone
+git clone https://github.com/HarshvardhanVG10/kisan-ai.git
+cd kisan-ai
+
+# 2. Add your API key
+cp backend/.env.example backend/.env
+# Edit backend/.env → set DATA_GOV_API_KEY=your_key_here
+
+# 3. Start
 docker-compose up --build
 ```
 
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000
-- **API Docs (Swagger)**: http://localhost:8000/docs
+- **App**: http://localhost:3000
+- **API docs**: http://localhost:8000/docs
 
-> First build takes 3–5 minutes (Prophet/pystan compilation). Subsequent starts are fast.
-
-### Stop the platform
-
-```bash
-docker-compose down
-```
-
----
-
-## Running Without Docker (Development)
-
-### Backend
-
-```bash
-cd App2/backend
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
-```
-
-### Frontend
-
-Open `App2/frontend/index.html` directly in a browser, or serve via any static server:
-
-```bash
-cd App2/frontend
-python -m http.server 3000
-```
-
-Then open http://localhost:3000
+First build takes 3–5 minutes (Prophet/pystan compilation). Subsequent starts are fast.
 
 ---
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/crops` | List all crops with current price snapshot |
-| `GET` | `/api/trends/{crop}` | Price & arrival trends. Query: `?district=Nashik&days=30` |
-| `GET` | `/api/forecast/{crop}` | Price forecast. Query: `?days=30&district=Nashik` |
-| `GET` | `/api/weather/{district}` | Weather risk & 10-day forecast |
-| `GET` | `/api/recommend` | Crop recommendations. Query: `?district=Nashik&season=Kharif` |
-| `GET` | `/api/risk/{crop}` | Risk analysis. Query: `?district=Nashik` |
-| `GET` | `/docs` | Interactive Swagger API documentation |
-| `GET` | `/health` | Health check |
-
-### Example Requests
-
-```bash
-# Get all crops
-curl http://localhost:8000/api/crops
-
-# Get Onion price trends for Nashik (30 days)
-curl "http://localhost:8000/api/trends/Onion?district=Nashik&days=30"
-
-# Get 30-day price forecast for Tomato
-curl "http://localhost:8000/api/forecast/Tomato?days=30&district=Pune"
-
-# Get weather risk for Nagpur
-curl http://localhost:8000/api/weather/Nagpur
-
-# Get Kharif crop recommendations for Solapur
-curl "http://localhost:8000/api/recommend?district=Solapur&season=Kharif"
-
-# Get risk analysis for Wheat in Ahmednagar
-curl "http://localhost:8000/api/risk/Wheat?district=Ahmednagar"
-```
+| Endpoint | Description |
+|---|---|
+| `GET /api/crops?district=Nashik` | Live prices for all crops |
+| `GET /api/trends/Onion?district=Nashik` | 30-day price trend |
+| `GET /api/forecast/Onion?days=30` | Price forecast |
+| `GET /api/weather/Nashik` | Weather + soil moisture |
+| `GET /api/risk/Onion?district=Nashik` | Risk score + MSP comparison |
+| `GET /api/recommend?district=Nashik&season=Kharif` | Crop recommendations |
+| `GET /api/msp/Wheat?price=2100` | MSP comparison for a price |
+| `GET /api/soil/Nashik` | Soil moisture + rainfall |
 
 ---
 
 ## Project Structure
 
 ```
-App2/
-├── docker-compose.yml
-├── README.md
-│
+kisan-ai/
 ├── backend/
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   ├── main.py                  # FastAPI app, CORS, router registration
 │   ├── data/
-│   │   ├── __init__.py
-│   │   └── mock_data.py         # Realistic mock data generator
-│   └── routers/
-│       ├── __init__.py
-│       ├── crops_list.py        # GET /api/crops
-│       ├── trends.py            # GET /api/trends/{crop}
-│       ├── forecast.py          # GET /api/forecast/{crop}
-│       ├── weather.py           # GET /api/weather/{district}
-│       ├── crops.py             # GET /api/recommend
-│       └── risk.py              # GET /api/risk/{crop}
-│
-└── frontend/
-    └── index.html               # Single-page app (Tailwind CDN + Chart.js CDN)
+│   │   ├── real_prices.py      # Live Agmarknet API (data.gov.in)
+│   │   ├── msp_data.py         # MSP values (Govt of India)
+│   │   ├── district_data.py    # District suitability scores
+│   │   └── mock_data.py        # Seasonal baseline (fallback only)
+│   ├── routers/
+│   │   ├── crops_list.py       # GET /api/crops
+│   │   ├── trends.py           # GET /api/trends
+│   │   ├── forecast.py         # GET /api/forecast
+│   │   ├── weather.py          # GET /api/weather + /api/soil
+│   │   ├── risk.py             # GET /api/risk
+│   │   ├── crops.py            # GET /api/recommend
+│   │   └── msp.py              # GET /api/msp
+│   ├── main.py
+│   ├── requirements.txt
+│   └── Dockerfile
+├── frontend/
+│   └── index.html              # Single-page app (Marathi + English)
+├── docker-compose.yml
+└── README.md
 ```
 
 ---
 
-## Technical Notes
+## Supported Districts (Maharashtra)
 
-- **Mock Data**: All price and arrival data is synthetically generated using sine-wave seasonal patterns + autocorrelated noise. Data is seeded for reproducibility.
-- **Forecasting**: Uses Facebook Prophet for time-series forecasting. Falls back to linear regression if Prophet is unavailable.
-- **Weather**: Deterministically generated from district name hash — same district always produces the same weather pattern.
-- **Risk Scoring**: Composite of supply risk (arrival trend), weather risk, price volatility (coefficient of variation), and seasonal risk (proximity to historical peak month).
+Nashik · Pune · Nagpur · Solapur · Aurangabad · Kolhapur · Satara · Ahmednagar · Latur · Jalgaon
+
+## Supported Crops
+
+Onion · Tomato · Potato · Wheat · Rice · Soybean · Cotton · Maize · Garlic · Chilli
 
 ---
 
-## Disclaimer
+## Note on Data Availability
 
-All data is mock/simulated for demonstration purposes. Do not use for real trading or farming decisions without consulting current APMC market data and local agricultural extension officers.
+Live Agmarknet data depends on the data.gov.in API. If the API is unreachable (e.g. corporate firewall blocking Docker containers), prices will show as unavailable. Weather, MSP, and district suitability work independently of the price API.
