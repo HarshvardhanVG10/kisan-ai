@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>किसान AI</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0faf4;
+      color: #1a3d2b;
+      min-height: 100vh;
+    }
+
+    /* HEADER */
+    header {
+      background: #2d6a4f;
+      color: white;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    header h1 { font-size: 22px; font-weight: 800; }
+    header p  { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+
+    .lang-toggle {
+      display: flex;
+      background: rgba(255,255,255,0.15);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+    .lang-toggle button {
+      border: none;
+      background: transparent;
+      color: white;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .lang-toggle button.active { background: #74c69d; color: #1a3d2b; }
+
+    /* DISTRICT BAR */
+    .district-bar {
+      background: #1b4332;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .district-bar label { color: #b7e4c7; font-size: 13px; }
+    .district-bar select {
+      flex: 1;
+      border: none;
+      background: #40916c;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      outline: none;
+    }
+
+    /* LIVE DATA BANNER */
+    .live-banner {
+      background: #d8f3dc;
+      border-bottom: 1px solid #b7e4c7;
+      padding: 6px 16px;
+      font-size: 11px;
+      color: #1b4332;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* WEATHER ALERT */
+    .weather-alert {
+      background: #fff1f2;
+      border-left: 5px solid #ef4444;
+      padding: 12px 16px;
+      display: none;
+    }
+    .weather-alert.show { display: flex; gap: 10px; align-items: flex-start; }
+    .weather-alert .icon { font-size: 28px; }
+    .weather-alert h3 { font-size: 15px; font-weight: 800; color: #b91c1c; }
+    .weather-alert p  { font-size: 13px; color: #7f1d1d; margin-top: 3px; }
+
+    /* MAIN QUESTION */
+    .main-question {
+      padding: 18px 16px 8px;
+      font-size: 18px;
+      font-weight: 800;
+      color: #1b4332;
+    }
+
+    /* BIG ACTION BUTTONS */
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 8px 16px 16px;
+    }
+    .action-btn {
+      background: white;
+      border: 2.5px solid #74c69d;
+      border-radius: 16px;
+      padding: 18px 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      box-shadow: 0 2px 8px rgba(45,106,79,0.10);
+    }
+    .action-btn:active { transform: scale(0.96); background: #d8f3dc; }
+    .action-btn.selected { background: #2d6a4f; border-color: #2d6a4f; color: white; }
+    .action-btn .emoji { font-size: 32px; display: block; margin-bottom: 6px; }
+    .action-btn .label { font-size: 14px; font-weight: 700; }
+    .action-btn.selected .label { color: white; }
+
+    /* SECTION CONTENT */
+    .section { padding: 0 16px 24px; display: none; }
+    .section.active { display: block; }
+
+    /* CROP CARDS */
+    .crop-card {
+      background: white;
+      border-radius: 20px;
+      padding: 18px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      border-left: 7px solid #ccc;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .crop-card:active { transform: scale(0.98); }
+    .crop-card.green  { border-left-color: #22c55e; }
+    .crop-card.yellow { border-left-color: #f59e0b; }
+    .crop-card.red    { border-left-color: #ef4444; }
+    .crop-card.unavailable {
+      border-left-color: #d1d5db;
+      background: #f9fafb;
+      opacity: 0.7;
+      cursor: default;
+    }
+
+    .crop-card .status-circle {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      flex-shrink: 0;
+    }
+    .crop-card.green  .status-circle { background: #dcfce7; }
+    .crop-card.yellow .status-circle { background: #fef9c3; }
+    .crop-card.red    .status-circle { background: #fee2e2; }
+    .crop-card.unavailable .status-circle { background: #f3f4f6; }
+
+    .crop-card .info { flex: 1; }
+    .crop-card .crop-name { font-size: 19px; font-weight: 800; color: #1b4332; }
+    .crop-card .crop-name-mr { font-size: 13px; color: #6b7280; font-weight: 500; }
+    .crop-card .price { font-size: 22px; font-weight: 900; color: #2d6a4f; margin: 2px 0; }
+    .crop-card .verdict { font-size: 14px; font-weight: 700; margin-top: 2px; }
+    .crop-card.green  .verdict { color: #15803d; }
+    .crop-card.yellow .verdict { color: #92400e; }
+    .crop-card.red    .verdict { color: #b91c1c; }
+    .crop-card .reason { font-size: 12px; color: #6b7280; margin-top: 3px; }
+
+    /* UNAVAILABLE NOTICE */
+    .unavail-notice {
+      background: #f9fafb;
+      border: 2px dashed #d1d5db;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      text-align: center;
+      color: #9ca3af;
+      font-size: 14px;
+    }
+    .unavail-notice strong { display: block; font-size: 16px; margin-bottom: 4px; color: #6b7280; }
+
+    /* LIMITED DATA NOTE */
+    .limited-note {
+      font-size: 11px;
+      color: #f59e0b;
+      background: #fef9c3;
+      padding: 3px 8px;
+      border-radius: 8px;
+      display: inline-block;
+      margin-top: 4px;
+    }
+
+    /* TREND ARROW */
+    .trend-arrow {
+      font-size: 22px;
+      font-weight: 900;
+      flex-shrink: 0;
+    }
+
+    /* DETAIL MODAL */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      align-items: flex-end;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-sheet {
+      background: white;
+      width: 100%;
+      max-height: 85vh;
+      border-radius: 24px 24px 0 0;
+      overflow-y: auto;
+      padding: 20px 18px 40px;
+    }
+    .modal-handle {
+      width: 40px; height: 5px;
+      background: #e5e7eb;
+      border-radius: 3px;
+      margin: 0 auto 18px;
+    }
+    .modal-sheet h2 { font-size: 22px; font-weight: 900; color: #1b4332; margin-bottom: 4px; }
+    .modal-close {
+      float: right;
+      font-size: 24px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #6b7280;
+      margin-top: -4px;
+    }
+
+    .detail-price-big {
+      font-size: 42px;
+      font-weight: 900;
+      color: #2d6a4f;
+      margin: 10px 0 4px;
+    }
+    .detail-subtitle { font-size: 13px; color: #6b7280; margin-bottom: 16px; }
+
+    .detail-verdict-box {
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .detail-verdict-box.green  { background: #dcfce7; }
+    .detail-verdict-box.yellow { background: #fef9c3; }
+    .detail-verdict-box.red    { background: #fee2e2; }
+    .detail-verdict-box .big-emoji { font-size: 40px; }
+    .detail-verdict-box .vtext h3 { font-size: 17px; font-weight: 800; }
+    .detail-verdict-box.green  .vtext h3 { color: #15803d; }
+    .detail-verdict-box.yellow .vtext h3 { color: #92400e; }
+    .detail-verdict-box.red    .vtext h3 { color: #b91c1c; }
+    .detail-verdict-box .vtext p { font-size: 13px; color: #374151; margin-top: 3px; }
+
+    .reason-list { list-style: none; margin-bottom: 16px; }
+    .reason-list li {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 10px 0;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 14px;
+      color: #374151;
+    }
+    .reason-list li .bullet { font-size: 18px; flex-shrink: 0; }
+
+    .risk-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .risk-row .label { font-size: 14px; color: #374151; }
+    .risk-pill {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .risk-pill.green  { background: #dcfce7; color: #15803d; }
+    .risk-pill.yellow { background: #fef9c3; color: #92400e; }
+    .risk-pill.red    { background: #fee2e2; color: #b91c1c; }
+
+    /* SPEAK BUTTON */
+    .speak-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #2d6a4f;
+      color: white;
+      border: none;
+      padding: 14px 20px;
+      border-radius: 50px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+      justify-content: center;
+      margin-top: 16px;
+    }
+    .speak-btn:active { background: #1b4332; }
+
+    /* LOADING */
+    .loader-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 50px 20px;
+      gap: 12px;
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 4px solid #d8f3dc;
+      border-top-color: #2d6a4f;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loader-text { font-size: 14px; color: #6b7280; }
+
+    /* PRICE TABLE */
+    .price-table { width: 100%; border-collapse: collapse; }
+    .price-table th {
+      background: #2d6a4f;
+      color: white;
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 13px;
+    }
+    .price-table td {
+      padding: 12px;
+      border-bottom: 1px solid #f0faf4;
+      font-size: 14px;
+    }
+    .price-table tr:nth-child(even) td { background: #f0faf4; }
+    .price-table .up   { color: #15803d; font-weight: 700; }
+    .price-table .down { color: #b91c1c; font-weight: 700; }
+
+    /* FORECAST CARD */
+    .forecast-card {
+      background: white;
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    }
+    .forecast-range {
+      font-size: 28px;
+      font-weight: 900;
+      color: #2d6a4f;
+      margin: 6px 0;
+    }
+    .forecast-card p { font-size: 14px; color: #6b7280; margin-top: 4px; }
+
+    /* SECTION TITLE */
+    .section-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #2d6a4f;
+      margin-bottom: 14px;
+      padding-top: 4px;
+    }
+
+    /* PLANNER */
+    .season-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .season-tab {
+      flex: 1;
+      padding: 10px;
+      border: 2px solid #74c69d;
+      border-radius: 12px;
+      background: white;
+      font-size: 13px;
+      font-weight: 700;
+      color: #2d6a4f;
+      cursor: pointer;
+      text-align: center;
+    }
+    .season-tab.active { background: #2d6a4f; color: white; border-color: #2d6a4f; }
+
+    .recommend-card {
+      background: white;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      border: 2.5px solid #22c55e;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .recommend-card.avoid {
+      border-color: #ef4444;
+      background: #fff8f8;
+    }
+    .recommend-card .rc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .recommend-card .rc-name { font-size: 20px; font-weight: 900; color: #1b4332; }
+    .recommend-card.avoid .rc-name { color: #b91c1c; }
+    .recommend-card .rc-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+    .recommend-card .rc-badge.good { background: #dcfce7; color: #15803d; }
+    .recommend-card .rc-badge.bad  { background: #fee2e2; color: #b91c1c; }
+    .recommend-card .rc-badge.gray { background: #f3f4f6; color: #6b7280; }
+    .recommend-card .rc-reason {
+      font-size: 13px;
+      color: #374151;
+      display: flex;
+      gap: 8px;
+      margin-bottom: 6px;
+      align-items: flex-start;
+    }
+
+    /* BOTTOM NAV */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0; right: 0;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      z-index: 100;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+    }
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px 0 12px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .nav-item:active { background: #f0faf4; }
+    .nav-item .nav-icon { font-size: 24px; }
+    .nav-item .nav-label { font-size: 10px; font-weight: 600; color: #9ca3af; margin-top: 3px; }
+    .nav-item.active .nav-label { color: #2d6a4f; }
+    .nav-item.active .nav-icon { filter: none; }
+
+    /* SPACER for bottom nav */
+    .bottom-spacer { height: 72px; }
+
+    /* PAGE FOOTER NOTE */
+    .page-footer-note {
+      font-size: 11px;
+      color: #9ca3af;
+      padding: 10px 0 4px;
+      text-align: center;
+    }
+
+    /* SOIL MOISTURE BAR */
+    .soil-bar-wrap {
+      background: #f3f4f6;
+      border-radius: 8px;
+      height: 10px;
+      overflow: hidden;
+      margin: 6px 0 4px;
+    }
+    .soil-bar-fill {
+      height: 100%;
+      border-radius: 8px;
+      transition: width 0.5s;
+    }
+    .soil-bar-fill.dry      { background: #f97316; }
+    .soil-bar-fill.optimal  { background: #22c55e; }
+    .soil-bar-fill.wet      { background: #3b82f6; }
+
+    /* WEATHER PAGE CARDS */
+    .weather-info-card {
+      background: white;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+    .weather-info-card .wic-title {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+    .weather-info-card .wic-value {
+      font-size: 28px;
+      font-weight: 900;
+      color: #1b4332;
+    }
+    .weather-info-card .wic-advice {
+      font-size: 13px;
+      color: #374151;
+      margin-top: 6px;
+    }
+    .rainfall-risk-pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-left: 8px;
+    }
+    .rainfall-risk-pill.none     { background: #dcfce7; color: #15803d; }
+    .rainfall-risk-pill.light    { background: #fef9c3; color: #92400e; }
+    .rainfall-risk-pill.moderate { background: #fed7aa; color: #c2410c; }
+    .rainfall-risk-pill.heavy    { background: #fee2e2; color: #b91c1c; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div>
+    <h1>🌾 किसान AI</h1>
+    <p id="headerSub">तुमच्या शेतासाठी स्मार्ट सल्ला</p>
+  </div>
+  <div class="lang-toggle">
+    <button id="btnMr" class="active" onclick="setLang('mr')">मराठी</button>
+    <button id="btnEn" onclick="setLang('en')">English</button>
+  </div>
+</header>
+
+<!-- LIVE DATA BANNER -->
+<div class="live-banner">
+  🟢 <span id="liveBannerText">Live data from Agmarknet / data.gov.in</span>
+</div>
+
+<!-- DISTRICT BAR -->
+<div class="district-bar">
+  <label id="lblDistrict">जिल्हा:</label>
+  <select id="districtSelector" onchange="onDistrictChange()">
+    <option value="Nashik">नाशिक</option>
+    <option value="Pune">पुणे</option>
+    <option value="Nagpur">नागपूर</option>
+    <option value="Solapur">सोलापूर</option>
+    <option value="Aurangabad">औरंगाबाद</option>
+    <option value="Kolhapur">कोल्हापूर</option>
+    <option value="Satara">सातारा</option>
+    <option value="Ahmednagar">अहमदनगर</option>
+    <option value="Latur">लातूर</option>
+    <option value="Jalgaon">जळगाव</option>
+  </select>
+</div>
+
+<!-- WEATHER ALERT -->
+<div class="weather-alert" id="weatherAlert">
+  <div class="icon">⛈️</div>
+  <div>
+    <h3 id="weatherTitle">हवामान इशारा</h3>
+    <p id="weatherText"></p>
+  </div>
+</div>
+
+<!-- PAGE: HOME -->
+<div id="page-home">
+  <div class="main-question" id="homeQuestion">आज काय करायचं?</div>
+  <div class="action-grid">
+    <div class="action-btn" onclick="goTo('grow')">
+      <span class="emoji">🌱</span>
+      <span class="label" id="btnGrow">काय पेरायचं?</span>
+    </div>
+    <div class="action-btn" onclick="goTo('sell')">
+      <span class="emoji">💰</span>
+      <span class="label" id="btnSell">कधी विकायचं?</span>
+    </div>
+    <div class="action-btn" onclick="goTo('risk')">
+      <span class="emoji">⚠️</span>
+      <span class="label" id="btnRisk">धोका किती?</span>
+    </div>
+    <div class="action-btn" onclick="goTo('prices')">
+      <span class="emoji">📊</span>
+      <span class="label" id="btnPrices">आजचे भाव</span>
+    </div>
+    <div class="action-btn" onclick="goTo('weather')" style="grid-column:1/-1">
+      <span class="emoji">🌧️</span>
+      <span class="label" id="btnWeather">हवामान व माती</span>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: GROW (Crop Planner) -->
+<div id="page-grow" style="display:none; padding: 0 0 16px;">
+  <div style="padding: 14px 16px 0; display:flex; align-items:center; gap:10px;">
+    <button onclick="goHome()" style="background:none;border:none;font-size:26px;cursor:pointer;">←</button>
+    <h2 class="section-title" style="margin:0" id="growTitle">काय पेरायचं?</h2>
+  </div>
+  <div style="padding: 12px 16px 0;">
+    <div class="season-tabs">
+      <div class="season-tab active" onclick="selectSeason('Kharif',this)" id="stKharif">खरीप</div>
+      <div class="season-tab" onclick="selectSeason('Rabi',this)" id="stRabi">रब्बी</div>
+      <div class="season-tab" onclick="selectSeason('Zaid',this)" id="stZaid">उन्हाळी</div>
+    </div>
+  </div>
+  <div id="growContent" style="padding: 0 16px;">
+    <div class="loader-wrap"><div class="spinner"></div><p class="loader-text" id="loadingText">माहिती येत आहे...</p></div>
+  </div>
+</div>
+
+<!-- PAGE: SELL (Price Trends) -->
+<div id="page-sell" style="display:none; padding: 0 0 16px;">
+  <div style="padding: 14px 16px 0; display:flex; align-items:center; gap:10px;">
+    <button onclick="goHome()" style="background:none;border:none;font-size:26px;cursor:pointer;">←</button>
+    <h2 class="section-title" style="margin:0" id="sellTitle">कधी विकायचं?</h2>
+  </div>
+  <div id="sellContent" style="padding: 12px 16px 0;">
+    <div class="loader-wrap"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<!-- PAGE: RISK -->
+<div id="page-risk" style="display:none; padding: 0 0 16px;">
+  <div style="padding: 14px 16px 0; display:flex; align-items:center; gap:10px;">
+    <button onclick="goHome()" style="background:none;border:none;font-size:26px;cursor:pointer;">←</button>
+    <h2 class="section-title" style="margin:0" id="riskTitle">धोका किती?</h2>
+  </div>
+  <div id="riskContent" style="padding: 12px 16px 0;">
+    <div class="loader-wrap"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<!-- PAGE: PRICES -->
+<div id="page-prices" style="display:none; padding: 0 0 16px;">
+  <div style="padding: 14px 16px 0; display:flex; align-items:center; gap:10px;">
+    <button onclick="goHome()" style="background:none;border:none;font-size:26px;cursor:pointer;">←</button>
+    <h2 class="section-title" style="margin:0" id="pricesTitle">आजचे भाव</h2>
+  </div>
+  <div id="pricesContent" style="padding: 12px 16px 0;">
+    <div class="loader-wrap"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<!-- PAGE: WEATHER -->
+<div id="page-weather" style="display:none; padding: 0 0 16px;">
+  <div style="padding: 14px 16px 0; display:flex; align-items:center; gap:10px;">
+    <button onclick="goHome()" style="background:none;border:none;font-size:26px;cursor:pointer;">←</button>
+    <h2 class="section-title" style="margin:0" id="weatherTitle2">हवामान व माती</h2>
+  </div>
+  <div id="weatherContent" style="padding: 12px 16px 0;">
+    <div class="loader-wrap"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<!-- CROP DETAIL MODAL (bottom sheet) -->
+<div class="modal-overlay" id="cropModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<div class="bottom-spacer"></div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="nav-item active" id="nav-home" onclick="goHome()">
+    <span class="nav-icon">🏠</span>
+    <span class="nav-label" id="navHome">मुख्यपान</span>
+  </div>
+  <div class="nav-item" id="nav-grow" onclick="goTo('grow')">
+    <span class="nav-icon">🌱</span>
+    <span class="nav-label" id="navGrow">पेरणी</span>
+  </div>
+  <div class="nav-item" id="nav-sell" onclick="goTo('sell')">
+    <span class="nav-icon">💰</span>
+    <span class="nav-label" id="navSell">विक्री</span>
+  </div>
+  <div class="nav-item" id="nav-risk" onclick="goTo('risk')">
+    <span class="nav-icon">⚠️</span>
+    <span class="nav-label" id="navRisk">धोका</span>
+  </div>
+  <div class="nav-item" id="nav-prices" onclick="goTo('prices')">
+    <span class="nav-icon">📊</span>
+    <span class="nav-label" id="navPrices">भाव</span>
+  </div>
+  <div class="nav-item" id="nav-weather" onclick="goTo('weather')">
+    <span class="nav-icon">🌧️</span>
+    <span class="nav-label" id="navWeather">हवामान</span>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:8000';
+let lang = 'mr';
+let district = 'Nashik';
+let currentSeason = 'Kharif';
+let weatherCache = null;
+
+// ========== TRANSLATIONS ==========
+const T = {
+  mr: {
+    headerSub: 'तुमच्या शेतासाठी स्मार्ट सल्ला',
+    homeQuestion: 'आज काय करायचं?',
+    btnGrow: 'काय पेरायचं?',
+    btnSell: 'कधी विकायचं?',
+    btnRisk: 'धोका किती?',
+    btnPrices: 'आजचे भाव',
+    lblDistrict: 'जिल्हा:',
+    growTitle: 'काय पेरायचं?',
+    sellTitle: 'कधी विकायचं?',
+    riskTitle: 'धोका किती?',
+    pricesTitle: 'आजचे भाव',
+    navHome: 'मुख्यपान', navGrow: 'पेरणी', navSell: 'विक्री', navRisk: 'धोका', navPrices: 'भाव', navWeather: 'हवामान',
+    btnWeather: 'हवामान व माती',
+    weatherTitle2: 'हवामान व माती',
+    loading: 'माहिती येत आहे...',
+    perKg: 'प्रति किलो (अंदाजे)',
+    perQtl: 'प्रति क्विंटल',
+    verdictGrow:   '✅ पेरणी करा',
+    verdictHold:   '⏳ थांबा',
+    verdictAvoid:  '❌ टाळा',
+    verdictSell:   '💰 आत्ता विका',
+    verdictWait:   '⏳ थोडे थांबा',
+    verdictDrop:   '📉 लवकर विका',
+    riskLow: '🟢 कमी धोका',
+    riskMed: '🟡 मध्यम धोका',
+    riskHigh: '🔴 जास्त धोका',
+    whyTitle: 'का?',
+    speakBtn: '🔊 ऐका',
+    recommended: '✅ शिफारस',
+    avoid: '❌ टाळा',
+    priceUp: '↑ भाव वाढतोय',
+    priceDown: '↓ भाव घसरतोय',
+    priceStable: '→ भाव स्थिर',
+    supply_risk: 'बाजार धोका',
+    weather_risk: 'हवामान धोका',
+    price_volatility_risk: 'भाव बदल',
+    seasonal_risk: 'हंगाम धोका',
+    forecastRange: 'पुढील ३० दिवसांत भाव',
+    bestTime: 'विकण्याचा सर्वोत्तम वेळ',
+    weatherAlert: 'हवामान इशारा',
+    unavailCard: 'माहिती उपलब्ध नाही / Data not available',
+    unavailForecast: 'या पिकाचा अंदाज उपलब्ध नाही / Forecast not available for this crop',
+    unavailTrend: 'या पिकाची माहिती उपलब्ध नाही / Trend data not available',
+    limitedDataNote: '* मर्यादित माहिती — अंदाज फक्त / Limited data — estimate only',
+    liveBanner: '🟢 Agmarknet / data.gov.in कडून थेट माहिती',
+    cropNames: {
+      Onion: 'कांदा', Tomato: 'टोमॅटो', Potato: 'बटाटा',
+      Wheat: 'गहू', Rice: 'तांदूळ', Soybean: 'सोयाबीन',
+      Cotton: 'कापूस', Maize: 'मका', Garlic: 'लसूण', Chilli: 'मिरची',
+    },
+    seasons: { Kharif: 'खरीप (जून–ऑक्टोबर)', Rabi: 'रब्बी (नोव्हेंबर–मार्च)', Zaid: 'उन्हाळी (मार्च–मे)' },
+  },
+  en: {
+    headerSub: 'Smart advice for your farm',
+    homeQuestion: 'What to do today?',
+    btnGrow: 'What to grow?',
+    btnSell: 'When to sell?',
+    btnRisk: 'Check risk',
+    btnPrices: "Today's prices",
+    lblDistrict: 'District:',
+    growTitle: 'What to grow?',
+    sellTitle: 'When to sell?',
+    riskTitle: 'Crop risk',
+    pricesTitle: "Today's prices",
+    navHome: 'Home', navGrow: 'Grow', navSell: 'Sell', navRisk: 'Risk', navPrices: 'Prices', navWeather: 'Weather',
+    btnWeather: 'Weather & Soil',
+    weatherTitle2: 'Weather & Soil',
+    loading: 'Loading...',
+    perKg: 'per kg (approx)',
+    perQtl: 'per quintal',
+    verdictGrow:   '✅ Grow it',
+    verdictHold:   '⏳ Wait',
+    verdictAvoid:  '❌ Avoid',
+    verdictSell:   '💰 Sell now',
+    verdictWait:   '⏳ Wait a bit',
+    verdictDrop:   '📉 Sell soon',
+    riskLow: '🟢 Low risk',
+    riskMed: '🟡 Medium risk',
+    riskHigh: '🔴 High risk',
+    whyTitle: 'Why?',
+    speakBtn: '🔊 Listen',
+    recommended: '✅ Recommended',
+    avoid: '❌ Avoid',
+    priceUp: '↑ Price rising',
+    priceDown: '↓ Price falling',
+    priceStable: '→ Price stable',
+    supply_risk: 'Market risk',
+    weather_risk: 'Weather risk',
+    price_volatility_risk: 'Price change',
+    seasonal_risk: 'Season risk',
+    forecastRange: 'Price in next 30 days',
+    bestTime: 'Best time to sell',
+    weatherAlert: 'Weather Alert',
+    unavailCard: 'माहिती उपलब्ध नाही / Data not available',
+    unavailForecast: 'या पिकाचा अंदाज उपलब्ध नाही / Forecast not available for this crop',
+    unavailTrend: 'Trend data not available for this crop',
+    limitedDataNote: '* Limited data — estimate only',
+    liveBanner: '🟢 Live data from Agmarknet / data.gov.in',
+    cropNames: {
+      Onion: 'Onion', Tomato: 'Tomato', Potato: 'Potato',
+      Wheat: 'Wheat', Rice: 'Rice', Soybean: 'Soybean',
+      Cotton: 'Cotton', Maize: 'Maize', Garlic: 'Garlic', Chilli: 'Chilli',
+    },
+    seasons: { Kharif: 'Kharif (Jun–Oct)', Rabi: 'Rabi (Nov–Mar)', Zaid: 'Zaid (Mar–May)' },
+  }
+};
+
+function t(key) { return T[lang][key] || key; }
+function cropName(en) { return T[lang].cropNames[en] || en; }
+
+// ========== LANG TOGGLE ==========
+function setLang(l) {
+  lang = l;
+  document.getElementById('btnMr').classList.toggle('active', l === 'mr');
+  document.getElementById('btnEn').classList.toggle('active', l === 'en');
+  applyLang();
+}
+
+function applyLang() {
+  ['headerSub','homeQuestion','btnGrow','btnSell','btnRisk','btnPrices','btnWeather',
+   'lblDistrict','growTitle','sellTitle','riskTitle','pricesTitle','weatherTitle2',
+   'navHome','navGrow','navSell','navRisk','navPrices','navWeather','loadingText'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = t(id) || t(id);
+  });
+  // Live banner
+  const lb = document.getElementById('liveBannerText');
+  if (lb) lb.textContent = t('liveBanner');
+  // Season tabs
+  document.getElementById('stKharif').textContent = lang === 'mr' ? 'खरीप' : 'Kharif';
+  document.getElementById('stRabi').textContent   = lang === 'mr' ? 'रब्बी' : 'Rabi';
+  document.getElementById('stZaid').textContent   = lang === 'mr' ? 'उन्हाळी' : 'Zaid';
+}
+
+// ========== DISTRICT ==========
+function onDistrictChange() {
+  district = document.getElementById('districtSelector').value;
+  weatherCache = null;
+  loadWeatherAlert();
+  const current = getCurrentPage();
+  if (current !== 'home') loadPage(current);
+}
+
+function getCurrentPage() {
+  const pages = ['grow','sell','risk','prices','weather'];
+  for (const p of pages) {
+    if (document.getElementById('page-' + p).style.display !== 'none') return p;
+  }
+  return 'home';
+}
+
+// ========== NAVIGATION ==========
+const allPages = ['home','grow','sell','risk','prices','weather'];
+const allNavs  = ['home','grow','sell','risk','prices','weather'];
+
+function goHome() {
+  allPages.forEach(p => {
+    document.getElementById('page-' + p).style.display = p === 'home' ? 'block' : 'none';
+  });
+  allNavs.forEach(n => {
+    const el = document.getElementById('nav-' + n);
+    if (el) el.classList.toggle('active', n === 'home');
+  });
+}
+
+function goTo(page) {
+  allPages.forEach(p => {
+    document.getElementById('page-' + p).style.display = p === page ? 'block' : 'none';
+  });
+  allNavs.forEach(n => {
+    const el = document.getElementById('nav-' + n);
+    if (el) el.classList.toggle('active', n === page);
+  });
+  loadPage(page);
+}
+
+function loadPage(page) {
+  if (page === 'grow')    loadGrow(currentSeason);
+  if (page === 'sell')    loadSell();
+  if (page === 'risk')    loadRisk();
+  if (page === 'prices')  loadPrices();
+  if (page === 'weather') loadWeatherPage();
+}
+
+// ========== API ==========
+async function api(path) {
+  try {
+    const r = await fetch(API + path);
+    if (r.status === 503) {
+      // Return a structured error for graceful handling
+      const body = await r.json().catch(() => ({}));
+      return { _unavailable: true, _status: 503, ...(body.detail || body) };
+    }
+    if (!r.ok) throw new Error(r.status);
+    return await r.json();
+  } catch(e) {
+    console.error(path, e);
+    return null;
+  }
+}
+
+function fmt(n) { return Math.round(n).toLocaleString('en-IN'); }
+function fmtKg(qtl) { return Math.round(qtl / 100); } // quintal → per kg approx
+
+// ========== WEATHER ALERT ==========
+async function loadWeatherAlert() {
+  const data = await api(`/api/weather/${district}`);
+  if (!data) return;
+  weatherCache = data;
+  const box = document.getElementById('weatherAlert');
+  if (data.overall_risk && data.overall_risk.risk_level === 'high') {
+    box.classList.add('show');
+    document.getElementById('weatherTitle').textContent =
+      (lang === 'mr' ? '⛈️ हवामान इशारा — ' : '⛈️ Weather Alert — ') + district;
+    document.getElementById('weatherText').textContent = data.overall_risk.alert;
+  } else {
+    box.classList.remove('show');
+  }
+}
+
+// ========== WEATHER PAGE ==========
+async function loadWeatherPage() {
+  const c = document.getElementById('weatherContent');
+  c.innerHTML = `<div class="loader-wrap"><div class="spinner"></div><p class="loader-text">${t('loading')}</p></div>`;
+
+  const data = weatherCache || await api(`/api/weather/${district}`);
+  if (!data) {
+    c.innerHTML = `<div class="unavail-notice"><strong>⚠️</strong>${lang === 'mr' ? 'हवामान माहिती उपलब्ध नाही' : 'Weather data not available'}</div>`;
+    return;
+  }
+  weatherCache = data;
+
+  const today = data.today || {};
+  const sm = data.soil_moisture;
+  const rf = data.rainfall_forecast;
+  const et = data.evapotranspiration;
+  const isLive = data.data_source === 'live';
+
+  // Soil moisture bar fill %: map 0–0.5 m³/m³ to 0–100%
+  function soilBarPct(val) { return Math.min(100, Math.round((val || 0) / 0.5 * 100)); }
+  function soilColor(level) {
+    if (level === 'dry') return 'dry';
+    if (level === 'wet') return 'wet';
+    return 'optimal';
+  }
+
+  const rainfallRiskLabel = {
+    none: lang === 'mr' ? 'पाऊस नाही' : 'No rain',
+    light: lang === 'mr' ? 'हलका पाऊस' : 'Light rain',
+    moderate: lang === 'mr' ? 'मध्यम पाऊस' : 'Moderate rain',
+    heavy: lang === 'mr' ? 'जड पाऊस' : 'Heavy rain',
+  };
+
+  let html = '';
+
+  // Today's weather card
+  html += `
+    <div class="weather-info-card">
+      <div class="wic-title">☀️ ${lang === 'mr' ? 'आजचे हवामान' : "Today's Weather"} — ${district}</div>
+      <div class="wic-value">${today.condition || '—'}</div>
+      <div class="wic-advice" style="margin-top:8px">
+        ${today.temp_max != null ? `🌡️ ${lang === 'mr' ? 'कमाल' : 'Max'}: ${today.temp_max}°C` : ''}
+        ${today.temp_min != null ? ` · ${lang === 'mr' ? 'किमान' : 'Min'}: ${today.temp_min}°C` : ''}
+        ${today.rainfall_mm != null && today.rainfall_mm > 0 ? ` · 🌧️ ${today.rainfall_mm}mm` : ''}
+      </div>
+    </div>`;
+
+  // Soil moisture card
+  if (sm) {
+    const smPct = soilBarPct(sm.current);
+    const smLevelColor = soilColor(sm.level);
+    const smLabel = lang === 'mr'
+      ? (sm.level === 'dry' ? '🔴 कोरडी' : sm.level === 'wet' ? '🔵 ओली' : '🟢 योग्य')
+      : (sm.level === 'dry' ? '🔴 Dry' : sm.level === 'wet' ? '🔵 Wet' : '🟢 Optimal');
+    html += `
+      <div class="weather-info-card">
+        <div class="wic-title">🌱 ${lang === 'mr' ? 'मातीतील ओलावा' : 'Soil Moisture'}</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="wic-value" style="font-size:22px">${sm.current != null ? (sm.current * 100).toFixed(1) + '%' : '—'}</span>
+          <span style="font-size:14px;font-weight:700">${smLabel}</span>
+        </div>
+        <div class="soil-bar-wrap">
+          <div class="soil-bar-fill ${smLevelColor}" style="width:${smPct}%"></div>
+        </div>
+        <div class="wic-advice">${lang === 'mr' ? sm.advice_mr : sm.advice_en}</div>
+        ${sm.irrigation_needed ? `<div style="margin-top:6px;background:#fee2e2;border-radius:8px;padding:6px 10px;font-size:13px;color:#b91c1c;font-weight:700">💧 ${lang === 'mr' ? 'आज सिंचन आवश्यक आहे' : 'Irrigation needed today'}</div>` : ''}
+      </div>`;
+  } else {
+    html += `<div class="weather-info-card"><div class="wic-title">🌱 ${lang === 'mr' ? 'मातीतील ओलावा' : 'Soil Moisture'}</div><div class="wic-advice">${lang === 'mr' ? 'थेट डेटा उपलब्ध नाही (mock मोड)' : 'Live data not available (mock mode)'}</div></div>`;
+  }
+
+  // Rainfall forecast card
+  if (rf) {
+    const risk = rf.risk || 'none';
+    html += `
+      <div class="weather-info-card">
+        <div class="wic-title">🌧️ ${lang === 'mr' ? 'पावसाचा अंदाज' : 'Rainfall Forecast'}</div>
+        <div style="display:flex;align-items:center;gap:4px">
+          <span class="wic-value">${rf.next_7_days_mm}mm</span>
+          <span class="rainfall-risk-pill ${risk}">${rainfallRiskLabel[risk] || risk}</span>
+        </div>
+        <div class="wic-advice" style="margin-top:4px;font-size:12px;color:#6b7280">
+          ${lang === 'mr' ? 'पुढील ७ दिवस' : 'Next 7 days'} · ${lang === 'mr' ? 'पुढील ३ दिवस' : 'Next 3 days'}: ${rf.next_3_days_mm}mm
+        </div>
+        <div class="wic-advice">${lang === 'mr' ? rf.advice_mr : rf.advice_en}</div>
+      </div>`;
+  } else {
+    html += `<div class="weather-info-card"><div class="wic-title">🌧️ ${lang === 'mr' ? 'पावसाचा अंदाज' : 'Rainfall Forecast'}</div><div class="wic-advice">${lang === 'mr' ? 'थेट डेटा उपलब्ध नाही' : 'Live data not available'}</div></div>`;
+  }
+
+  // Evapotranspiration card
+  if (et) {
+    html += `
+      <div class="weather-info-card">
+        <div class="wic-title">💧 ${lang === 'mr' ? 'बाष्पोत्सर्जन (पाण्याची गरज)' : 'Evapotranspiration (Water Need)'}</div>
+        <div class="wic-value">${et.today_mm}mm</div>
+        <div class="wic-advice">${lang === 'mr' ? et.advice_mr : et.advice_en}</div>
+      </div>`;
+  }
+
+  // 10-day forecast mini strip
+  if (data.forecast && data.forecast.length) {
+    html += `<p class="section-title" style="margin-top:8px">${lang === 'mr' ? '१० दिवसांचा अंदाज' : '10-Day Forecast'}</p>`;
+    html += `<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px">`;
+    data.forecast.slice(0, 10).forEach(d => {
+      const rColor = d.risk_level === 'high' ? '#fee2e2' : d.risk_level === 'medium' ? '#fef9c3' : '#dcfce7';
+      const icon = d.condition.includes('Rain') || d.condition.includes('Thunder') ? '🌧️'
+                 : d.condition === 'Clear' ? '☀️'
+                 : d.condition === 'Heatwave' ? '🔥'
+                 : d.condition === 'Fog' ? '🌫️'
+                 : '⛅';
+      const dayLabel = new Date(d.date).toLocaleDateString(lang === 'mr' ? 'mr-IN' : 'en-IN', { month:'short', day:'numeric' });
+      html += `<div style="min-width:62px;background:${rColor};border-radius:12px;padding:8px 6px;text-align:center;flex-shrink:0">
+        <div style="font-size:20px">${icon}</div>
+        <div style="font-size:11px;font-weight:700;margin-top:2px">${dayLabel}</div>
+        <div style="font-size:12px;font-weight:700">${d.temp_max}°</div>
+        ${d.rainfall_mm > 0 ? `<div style="font-size:10px;color:#1d4ed8">${d.rainfall_mm}mm</div>` : ''}
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `<p class="page-footer-note">${isLive ? '🟢 Open-Meteo' : '⚪ Mock data'}</p>`;
+  c.innerHTML = html;
+}
+
+// ========== GROW PAGE ==========
+function selectSeason(season, el) {
+  currentSeason = season;
+  document.querySelectorAll('.season-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  loadGrow(season);
+}
+
+async function loadGrow(season) {
+  const c = document.getElementById('growContent');
+  c.innerHTML = `<div class="loader-wrap"><div class="spinner"></div><p class="loader-text">${t('loading')}</p></div>`;
+
+  const data = await api(`/api/recommend?district=${district}&season=${season}`);
+  if (!data || data._unavailable) {
+    c.innerHTML = `<div class="unavail-notice"><strong>⚠️</strong>${t('unavailTrend')}</div>`;
+    return;
+  }
+
+  let html = '';
+
+  // Recommended
+  html += `<p class="section-title">${t('recommended')}</p>`;
+  data.recommendations.forEach((r, i) => {
+    const medals = ['🥇','🥈','🥉'];
+    const priceDisplay = r.current_price > 0
+      ? `₹${fmt(r.current_price)} / qtl`
+      : (lang === 'mr' ? 'भाव उपलब्ध नाही' : 'No price data');
+    const badgeClass = r.current_price > 0 ? 'good' : 'gray';
+    const limitedNote = r.data_limited
+      ? `<div class="limited-note">${t('limitedDataNote')}</div>`
+      : '';
+    html += `
+      <div class="recommend-card">
+        <div class="rc-header">
+          <span class="rc-name">${medals[i] || ''} ${cropName(r.crop)}</span>
+          <span class="rc-badge ${badgeClass}">${priceDisplay}</span>
+        </div>
+        ${r.reasons.map(reason => `
+          <div class="rc-reason"><span>✓</span><span>${reason}</span></div>
+        `).join('')}
+        ${limitedNote}
+      </div>`;
+  });
+
+  // Avoid
+  html += `<p class="section-title" style="color:#b91c1c; margin-top:10px">${t('avoid')}</p>`;
+  data.avoid.forEach(a => {
+    html += `
+      <div class="recommend-card avoid">
+        <div class="rc-header">
+          <span class="rc-name">${cropName(a.crop)}</span>
+          <span class="rc-badge bad">${t('avoid')}</span>
+        </div>
+        ${(a.reasons || []).slice(0,2).map(r => `
+          <div class="rc-reason"><span>✗</span><span>${r}</span></div>
+        `).join('')}
+      </div>`;
+  });
+
+  if (data.disclaimer) {
+    html += `<p style="font-size:11px;color:#9ca3af;padding:8px 0;">${data.disclaimer}</p>`;
+  }
+  html += `<p class="page-footer-note">🟢 ${lang === 'mr' ? 'Agmarknet / data.gov.in कडून थेट माहिती' : 'Live data from Agmarknet / data.gov.in'}</p>`;
+
+  c.innerHTML = html;
+}
+
+// ========== SELL PAGE ==========
+async function loadSell() {
+  const c = document.getElementById('sellContent');
+  c.innerHTML = `<div class="loader-wrap"><div class="spinner"></div></div>`;
+
+  const crops = ['Onion','Tomato','Potato','Wheat','Rice','Soybean','Cotton','Maize','Garlic','Chilli'];
+  const results = await Promise.all(
+    crops.map(crop =>
+      Promise.all([
+        api(`/api/trends/${crop}?district=${district}&days=30`),
+        api(`/api/forecast/${crop}?days=30&district=${district}`)
+      ])
+    )
+  );
+
+  let html = '';
+  let anyLive = false;
+
+  results.forEach(([trend, forecast], i) => {
+    const crop = crops[i];
+
+    // Check if trend data is unavailable (503)
+    if (!trend || trend._unavailable) {
+      html += `
+        <div class="crop-card unavailable">
+          <div class="status-circle">🚫</div>
+          <div class="info">
+            <div class="crop-name">${cropName(crop)}</div>
+            <div class="reason">${t('unavailCard')}</div>
+          </div>
+        </div>`;
+      return;
+    }
+
+    anyLive = true;
+    const change = trend.price_trend_7d || 0;
+    const color = change > 3 ? 'green' : change < -3 ? 'red' : 'yellow';
+    const verdict = change > 3 ? t('verdictSell') : change < -3 ? t('verdictDrop') : t('verdictWait');
+    const trendLabel = change > 3 ? t('priceUp') : change < -3 ? t('priceDown') : t('priceStable');
+    const trendArrow = change > 3 ? '📈' : change < -3 ? '📉' : '➡️';
+
+    // Forecast range or unavailable message
+    let forecastInfo = '';
+    if (forecast && !forecast._unavailable) {
+      forecastInfo = `${t('forecastRange')}: ₹${fmt(forecast.forecast_min)}–₹${fmt(forecast.forecast_max)}`;
+    } else {
+      forecastInfo = t('unavailForecast');
+    }
+
+    html += `
+      <div class="crop-card ${color}" onclick="openCropDetail('${crop}')">
+        <div class="status-circle">${trendArrow}</div>
+        <div class="info">
+          <div class="crop-name">${cropName(crop)}</div>
+          <div class="price">₹${fmt(trend.current_price)}<span style="font-size:13px;font-weight:400;color:#6b7280"> /qtl</span></div>
+          <div class="verdict">${verdict}</div>
+          <div class="reason">${trendLabel} · ${forecastInfo}</div>
+        </div>
+      </div>`;
+  });
+
+  if (!anyLive) {
+    html = `<div class="unavail-notice">
+      <strong>⚠️ ${lang === 'mr' ? 'माहिती उपलब्ध नाही' : 'Data not available'}</strong>
+      ${lang === 'mr'
+        ? 'या जिल्ह्यासाठी कोणत्याही पिकाची थेट माहिती सापडली नाही. वेगळा जिल्हा निवडा.'
+        : 'No live data found for any crop in this district. Please try a different district.'}
+    </div>`;
+  }
+
+  html += `<p class="page-footer-note">🟢 ${lang === 'mr' ? 'Agmarknet / data.gov.in कडून थेट माहिती' : 'Live data from Agmarknet / data.gov.in'}</p>`;
+  c.innerHTML = html;
+}
+
+// ========== RISK PAGE ==========
+async function loadRisk() {
+  const c = document.getElementById('riskContent');
+  c.innerHTML = `<div class="loader-wrap"><div class="spinner"></div></div>`;
+
+  const crops = ['Onion','Tomato','Potato','Wheat','Rice','Soybean','Cotton','Maize','Garlic','Chilli'];
+  const results = await Promise.all(crops.map(crop => api(`/api/risk/${crop}?district=${district}`)));
+
+  let html = '';
+  results.forEach((data, i) => {
+    if (!data) return;
+    const crop = crops[i];
+    const emoji = data.overall_color === 'green' ? '🟢' : data.overall_color === 'yellow' ? '🟡' : '🔴';
+    const riskLabel = data.overall_color === 'green' ? t('riskLow') : data.overall_color === 'yellow' ? t('riskMed') : t('riskHigh');
+
+    const limitedNote = data.data_source === 'limited_live'
+      ? `<div class="limited-note">${t('limitedDataNote')}</div>`
+      : '';
+
+    html += `
+      <div class="crop-card ${data.overall_color}" onclick="openCropDetail('${data.crop}')">
+        <div class="status-circle">${emoji}</div>
+        <div class="info">
+          <div class="crop-name">${cropName(data.crop)}</div>
+          <div class="price">₹${fmt(data.current_price)}<span style="font-size:13px;font-weight:400;color:#6b7280"> /qtl</span></div>
+          <div class="verdict">${riskLabel}</div>
+          <div class="reason">${data.overall_summary}</div>
+          ${limitedNote}
+        </div>
+      </div>`;
+  });
+
+  html += `<p class="page-footer-note">🟢 ${lang === 'mr' ? 'Agmarknet / data.gov.in कडून थेट माहिती · हवामान: Open-Meteo' : 'Live data from Agmarknet / data.gov.in · Weather: Open-Meteo'}</p>`;
+  c.innerHTML = html;
+}
+
+// ========== PRICES PAGE ==========
+async function loadPrices() {
+  const c = document.getElementById('pricesContent');
+  c.innerHTML = `<div class="loader-wrap"><div class="spinner"></div></div>`;
+
+  const data = await api(`/api/crops?district=${district}`);
+  if (!data) {
+    c.innerHTML = `<div class="unavail-notice"><strong>⚠️</strong>${lang === 'mr' ? 'माहिती लोड करण्यात त्रुटी' : 'Error loading prices'}</div>`;
+    return;
+  }
+
+  const liveCrops = (data.crops || []).filter(c => c.source === 'live');
+
+  if (liveCrops.length === 0) {
+    c.innerHTML = `<div class="unavail-notice">
+      <strong>⚠️ ${lang === 'mr' ? 'थेट भाव उपलब्ध नाही' : 'No live prices available'}</strong>
+      ${lang === 'mr'
+        ? 'या जिल्ह्यासाठी Agmarknet वर सध्या कोणतेही भाव उपलब्ध नाहीत.'
+        : 'No live prices available on Agmarknet for this district right now.'}
+    </div>`;
+    return;
+  }
+
+  let html = `<table class="price-table">
+    <thead><tr>
+      <th>${lang === 'mr' ? 'पीक' : 'Crop'}</th>
+      <th>${lang === 'mr' ? 'भाव (₹/qtl)' : 'Price (₹/qtl)'}</th>
+      <th>${lang === 'mr' ? 'बाजार' : 'Market'}</th>
+    </tr></thead><tbody>`;
+
+  liveCrops.forEach(row => {
+    html += `<tr>
+      <td><strong>${cropName(row.crop)}</strong></td>
+      <td><strong>₹${fmt(row.price)}</strong><br><span style="font-size:11px;color:#9ca3af">${row.date || ''}</span></td>
+      <td style="font-size:12px;color:#6b7280">${row.market || '—'}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+
+  // Show unavailable crops if any
+  if (data.unavailable_crops && data.unavailable_crops.length > 0) {
+    const names = data.unavailable_crops.map(u => cropName(u.crop)).join(', ');
+    html += `<p style="font-size:11px;color:#9ca3af;padding:10px 0 4px">
+      ${lang === 'mr' ? 'माहिती नाही' : 'No live data'}: ${names}
+    </p>`;
+  }
+
+  html += `<p class="page-footer-note">🟢 ${lang === 'mr' ? 'Agmarknet / data.gov.in कडून थेट माहिती' : 'Live data from Agmarknet / data.gov.in'}</p>`;
+  c.innerHTML = html;
+}
+
+// ========== CROP DETAIL MODAL ==========
+async function openCropDetail(crop) {
+  document.getElementById('cropModal').classList.add('open');
+  const mc = document.getElementById('modalContent');
+  mc.innerHTML = `<div class="loader-wrap"><div class="spinner"></div></div>`;
+
+  const [risk, trend, forecast] = await Promise.all([
+    api(`/api/risk/${crop}?district=${district}`),
+    api(`/api/trends/${crop}?district=${district}&days=30`),
+    api(`/api/forecast/${crop}?days=30&district=${district}`)
+  ]);
+
+  if (!risk) { mc.innerHTML = '<p style="color:red;padding:16px">Error loading data</p>'; return; }
+
+  const color = risk.overall_color || 'yellow';
+  const emoji = color === 'green' ? '🟢' : color === 'yellow' ? '🟡' : '🔴';
+  const verdictText = color === 'green' ? t('verdictGrow') : color === 'yellow' ? t('verdictHold') : t('verdictAvoid');
+
+  const bd = risk.breakdown || {};
+  const riskKeys = ['supply_risk','weather_risk','price_volatility_risk','seasonal_risk'];
+
+  // Limited data note
+  const limitedBanner = risk.data_source === 'limited_live'
+    ? `<div class="limited-note" style="margin-bottom:12px;display:block">${t('limitedDataNote')}</div>`
+    : '';
+
+  // Build speak text
+  const speakText = lang === 'mr'
+    ? `${cropName(crop)}. भाव: ${fmt(risk.current_price)} रुपये. ${risk.overall_summary}. ${risk.recommendation}.`
+    : `${crop}. Price: ${fmt(risk.current_price)} rupees. ${risk.overall_summary}. ${risk.recommendation}.`;
+
+  // Forecast section
+  let forecastSection = '';
+  if (forecast && !forecast._unavailable) {
+    forecastSection = `
+    <div style="background:#f0faf4;border-radius:16px;padding:14px;margin-bottom:16px">
+      <p style="font-size:12px;color:#6b7280;margin-bottom:4px">${t('forecastRange')}</p>
+      <div class="forecast-range">₹${fmt(forecast.forecast_min)} – ₹${fmt(forecast.forecast_max)}</div>
+      <p>${forecast.summary || ''}</p>
+    </div>`;
+  } else {
+    forecastSection = `
+    <div style="background:#fff9f0;border-radius:16px;padding:14px;margin-bottom:16px;border:1px solid #fed7aa">
+      <p style="font-size:13px;color:#92400e">⚠️ ${t('unavailForecast')}</p>
+    </div>`;
+  }
+
+  // Trend section
+  let trendNote = '';
+  if (!trend || trend._unavailable) {
+    trendNote = `<p style="font-size:12px;color:#9ca3af;margin-bottom:8px">⚠️ ${t('unavailTrend')}</p>`;
+  }
+
+  // MSP comparison section
+  const msp = risk.msp_comparison;
+  let mspSection = '';
+  if (msp && msp.under_msp) {
+    const statusColors = {
+      good:    { bg: '#dcfce7', border: '#86efac', pill: '#15803d', pillBg: '#dcfce7' },
+      ok:      { bg: '#f0fdf4', border: '#bbf7d0', pill: '#166534', pillBg: '#dcfce7' },
+      warning: { bg: '#fef9c3', border: '#fde047', pill: '#92400e', pillBg: '#fef9c3' },
+      danger:  { bg: '#fee2e2', border: '#fca5a5', pill: '#b91c1c', pillBg: '#fee2e2' },
+    };
+    const sc = statusColors[msp.status] || statusColors['ok'];
+    const mspLabel = lang === 'mr' ? msp.label_mr : msp.label_en;
+    const mspAdvice = lang === 'mr' ? msp.advice_mr : msp.advice_en;
+    mspSection = `
+      <div style="background:${sc.bg};border-radius:16px;padding:14px;margin-bottom:16px;border:2px solid ${sc.border}">
+        <p style="font-size:12px;color:#0369a1;margin-bottom:4px">📋 ${lang === 'mr' ? 'सरकारी हमीभाव (MSP)' : 'Minimum Support Price (MSP)'}</p>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:20px;font-weight:900;color:#0c4a6e">₹${fmt(msp.msp)}/qtl</span>
+          <span style="padding:4px 12px;border-radius:20px;font-size:13px;font-weight:700;background:${sc.pillBg};color:${sc.pill}">${mspLabel}</span>
+        </div>
+        <p style="font-size:13px;margin-top:8px;color:#374151">${mspAdvice}</p>
+        <p style="font-size:11px;color:#6b7280;margin-top:4px">${lang === 'mr' ? 'वर्ष' : 'Year'}: ${msp.year} · ${msp.season}</p>
+      </div>`;
+  } else if (msp && !msp.under_msp) {
+    mspSection = `
+      <div style="background:#f9fafb;border-radius:12px;padding:10px 14px;margin-bottom:16px">
+        <p style="font-size:12px;color:#6b7280">ℹ️ ${lang === 'mr' ? 'हे पीक MSP योजनेत नाही (भाजीपाला)' : 'Not under MSP scheme (vegetable)'}</p>
+      </div>`;
+  }
+
+  // District suitability section
+  const ds = risk.district_suitability;
+  let suitabilitySection = '';
+  if (ds) {
+    const dsLabel = lang === 'mr' ? ds.label_mr : ds.label_en;
+    const levelColors = {
+      excellent: '#f0fdf4',
+      good:      '#fefce8',
+      moderate:  '#fffbeb',
+      poor:      '#fff1f2',
+    };
+    const bgColor = levelColors[ds.level] || '#fefce8';
+    suitabilitySection = `
+      <div style="background:${bgColor};border-radius:12px;padding:12px 14px;margin-bottom:16px;border:1px solid #fde68a">
+        <p style="font-size:12px;color:#92400e;margin-bottom:4px">📍 ${district} ${lang === 'mr' ? 'जिल्ह्यासाठी योग्यता' : 'District Suitability'}</p>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:22px;font-weight:900;color:#78350f">${ds.score}/100</span>
+          <span style="font-size:13px;color:#451a03">${dsLabel}</span>
+        </div>
+        ${ds.district_notes ? `<p style="font-size:11px;color:#92400e;margin-top:4px">${ds.district_notes}</p>` : ''}
+      </div>`;
+  }
+
+  // Soil moisture section (from weather data)
+  const wCache = weatherCache;
+  let soilSection = '';
+  if (wCache && wCache.soil_moisture && wCache.soil_moisture.level) {
+    const sm = wCache.soil_moisture;
+    const smLevel = sm.level;
+    const smBg = smLevel === 'dry' ? '#fff7ed' : smLevel === 'wet' ? '#eff6ff' : '#f0fdf4';
+    const smAdvice = lang === 'mr' ? sm.advice_mr : sm.advice_en;
+    const smPct = Math.min(100, Math.round((sm.current || 0) / 0.5 * 100));
+    const smColorClass = smLevel === 'dry' ? 'dry' : smLevel === 'wet' ? 'wet' : 'optimal';
+    soilSection = `
+      <div style="background:${smBg};border-radius:12px;padding:12px 14px;margin-bottom:16px">
+        <p style="font-size:12px;color:#6b7280;margin-bottom:6px">🌱 ${lang === 'mr' ? 'मातीतील ओलावा' : 'Soil Moisture'} — ${district}</p>
+        <div class="soil-bar-wrap"><div class="soil-bar-fill ${smColorClass}" style="width:${smPct}%"></div></div>
+        <p style="font-size:13px;color:#374151;margin-top:6px">${smAdvice}</p>
+      </div>`;
+  }
+
+  mc.innerHTML = `
+    <h2>${cropName(crop)}</h2>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:4px">${district}</p>
+
+    <div class="detail-price-big">₹${fmt(risk.current_price)}</div>
+    <p class="detail-subtitle">${t('perQtl')} · ≈ ₹${fmtKg(risk.current_price)} ${t('perKg')}</p>
+
+    ${limitedBanner}
+
+    <div class="detail-verdict-box ${color}">
+      <div class="big-emoji">${emoji}</div>
+      <div class="vtext">
+        <h3>${verdictText}</h3>
+        <p>${risk.overall_summary}</p>
+        <p style="margin-top:6px;font-weight:700">${risk.recommendation}</p>
+      </div>
+    </div>
+
+    ${forecastSection}
+    ${mspSection}
+    ${suitabilitySection}
+    ${soilSection}
+    ${trendNote}
+
+    <p style="font-weight:800;font-size:15px;margin-bottom:10px">${t('whyTitle')}</p>
+    <ul class="reason-list">
+      ${(risk.key_insights || []).map(i => `<li><span class="bullet">▶</span><span>${i}</span></li>`).join('')}
+    </ul>
+
+    <p style="font-weight:800;font-size:15px;margin:10px 0 10px">${lang === 'mr' ? 'धोका तपशील' : 'Risk details'}</p>
+    ${riskKeys.map(k => {
+      const r = bd[k];
+      if (!r) return '';
+      const rc = r.color || 'yellow';
+      const estimateNote = r.is_estimate ? ' <span style="font-size:10px;color:#f59e0b">~est</span>' : '';
+      return `<div class="risk-row">
+        <span class="label">${t(k)}</span>
+        <span class="risk-pill ${rc}">${rc === 'green' ? '🟢' : rc === 'yellow' ? '🟡' : '🔴'} ${r.score}/100${estimateNote}</span>
+      </div>`;
+    }).join('')}
+
+    <p class="page-footer-note" style="margin-top:12px">🟢 ${lang === 'mr' ? 'Agmarknet / data.gov.in · हवामान: Open-Meteo' : 'Live data: Agmarknet / data.gov.in · Weather: Open-Meteo'}</p>
+
+    <button class="speak-btn" onclick="speak(\`${speakText.replace(/`/g,"'")}\`)">
+      ${t('speakBtn')}
+    </button>
+  `;
+}
+
+function closeModal() {
+  document.getElementById('cropModal').classList.remove('open');
+  window.speechSynthesis && window.speechSynthesis.cancel();
+}
+
+document.getElementById('cropModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ========== VOICE ==========
+function speak(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = lang === 'mr' ? 'mr-IN' : 'en-IN';
+  u.rate = 0.85;
+  window.speechSynthesis.speak(u);
+}
+
+// ========== INIT ==========
+loadWeatherAlert();
+</script>
+</body>
+</html>
