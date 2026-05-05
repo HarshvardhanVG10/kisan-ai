@@ -108,7 +108,7 @@ async def _fetch_with_tiers(commodity: str, district: Optional[str]) -> Optional
     }))
 
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=45.0) as client:
             for tier_num, params in tiers:
                 try:
                     resp = await client.get(BASE_URL, params=params)
@@ -222,7 +222,7 @@ async def _try_fetch_history(commodity: str, days: int) -> list:
     }
 
     try:
-        async with httpx.AsyncClient(timeout=20.0) as client:
+        async with httpx.AsyncClient(timeout=45.0) as client:
             resp = await client.get(BASE_URL, params=params)
             if resp.status_code != 200:
                 return []
