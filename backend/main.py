@@ -5,7 +5,7 @@ FastAPI backend with CORS enabled.
 
 import asyncio
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from routers import trends, forecast, weather, crops, risk, crops_list, msp
@@ -78,6 +78,29 @@ def root():
 @app.get("/health", tags=["Health"])
 def health_check():
     return {"status": "healthy"}
+
+
+@app.post("/api/ingest-prices", tags=["Ingest"])
+async def ingest_prices(request: Request):
+    """Receives price data from Cloudflare Worker and stores in DB."""
+    from fastapi.responses import JSONResponse
+    from data.db import save_current_price, save_price_history
+
+    secret = request.headers.get("X-KisanAI-Secret", "")
+    if secret != "kisanai2025":
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    body = await request.json()
+    saved = []
+    for crop, data in body.items():
+        if data.get("current"):
+            await save_current_price(crop, data["current"])
+        if data.get("history"):
+            await save_price_history(crop, data["history"])
+        saved.append(crop)
+
+    print(f"[ingest] Saved prices for: {saved}")
+    return {"saved": saved}
 
 
 @app.get("/api/test-data-gov", tags=["Health"])
