@@ -49,15 +49,13 @@ def _parse_date(r: dict) -> datetime:
 
 async def fetch_real_price(crop: str, district: Optional[str] = None) -> Optional[dict]:
     """
-    Fetch latest modal price for a crop from data.gov.in.
-    Uses 3-tier broadening search:
-      Tier 1: commodity + district filter (limit=10)
-      Tier 2: commodity + state=Maharashtra filter (limit=20)
-      Tier 3: commodity only, all-India (limit=20)
-
-    Returns dict with: price, min_price, max_price, market, date, tier, source="live"
-    or None if unavailable.
+    Fetch latest modal price for a crop.
+    1. Try in-memory cache
+    2. Try live data.gov.in API
+    3. Fall back to DB cache (stored by Cloudflare Worker)
     """
+    from data.db import get_latest_price, save_current_price
+
     cache_key = f"{crop}:{district}"
     now = datetime.now().timestamp()
 
@@ -66,12 +64,22 @@ async def fetch_real_price(crop: str, district: Optional[str] = None) -> Optiona
 
     commodities = CROP_COMMODITY_MAP.get(crop, [crop])
 
+    # Try live API first
     for commodity in commodities:
         result = await _fetch_with_tiers(commodity, district)
         if result:
             _cache[cache_key] = result
             _cache_time[cache_key] = now
+            await save_current_price(crop, result)
             return result
+
+    # Fall back to DB cache
+    db_result = await get_latest_price(crop, district)
+    if db_result:
+        print(f"[real_prices] Using DB cache for {crop}")
+        _cache[cache_key] = db_result
+        _cache_time[cache_key] = now
+        return db_result
 
     return None
 
@@ -202,7 +210,13 @@ async def fetch_price_history(
         if len(best_result) >= 7:
             break  # Good enough — stop trying other spellings
 
-    # Cache result (including empty, to avoid repeated hammering)
+    # Fall back to DB if live fetch returned nothing
+    if not best_result:
+        from data.db import get_price_history_from_db
+        best_result = await get_price_history_from_db(crop, days)
+        if best_result:
+            print(f"[real_prices] Using DB history cache for {crop}")
+
     _cache[cache_key] = best_result
     _cache_time[cache_key] = now
     return best_result

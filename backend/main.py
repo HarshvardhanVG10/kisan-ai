@@ -13,21 +13,16 @@ from data.real_prices import fetch_all_crops_real, fetch_all_history
 
 TOP_DISTRICTS = ["Nashik", "Pune", "Nagpur", "Latur", "Aurangabad"]
 
-async def _warm_cache():
-    """Pre-fetch prices for top districts on startup so first requests are fast."""
+async def _startup():
+    from data.db import init_db
     try:
-        print("[startup] Warming price cache...")
-        await asyncio.gather(
-            *[fetch_all_crops_real(d) for d in TOP_DISTRICTS],
-            return_exceptions=True
-        )
-        print("[startup] Cache warm complete.")
+        await init_db()
     except Exception as e:
-        print(f"[startup] Cache warm failed: {e}")
+        print(f"[startup] DB init failed: {e}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    asyncio.create_task(_warm_cache())
+    asyncio.create_task(_startup())
     yield
 
 app = FastAPI(
