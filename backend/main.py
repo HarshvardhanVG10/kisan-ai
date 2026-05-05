@@ -83,3 +83,26 @@ def root():
 @app.get("/health", tags=["Health"])
 def health_check():
     return {"status": "healthy"}
+
+
+@app.get("/api/test-data-gov", tags=["Health"])
+async def test_data_gov():
+    """Test if data.gov.in API is reachable from this server."""
+    import httpx, os
+    url = "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070"
+    params = {
+        "api-key": os.getenv("DATA_GOV_API_KEY", ""),
+        "format": "json",
+        "limit": "2",
+        "filters[commodity]": "Onion",
+    }
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.get(url, params=params)
+            return {
+                "status": resp.status_code,
+                "records_count": len(resp.json().get("records", [])),
+                "reachable": True,
+            }
+    except Exception as e:
+        return {"reachable": False, "error": type(e).__name__, "detail": str(e)}
