@@ -141,7 +141,7 @@ async def _fetch_with_tiers(commodity: str, district: Optional[str]) -> Optional
                         "source":    "live",
                     }
                 except Exception as e:
-                    print(f"[real_prices] Tier {tier_num} error for {commodity}: {e}")
+                    print(f"[real_prices] Tier {tier_num} error for {commodity}: {type(e).__name__}: {e}")
                     continue
 
     except Exception as e:
@@ -294,7 +294,7 @@ async def _try_fetch_history(commodity: str, days: int) -> list:
             return history[-days:]
 
     except Exception as e:
-        print(f"[real_prices] Error fetching history for {commodity}: {e}")
+        print(f"[real_prices] Error fetching history for {commodity}: {type(e).__name__}: {e}")
         return []
 
 
