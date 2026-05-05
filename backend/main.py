@@ -3,12 +3,35 @@ KisanAI — Crop Intelligence Platform
 FastAPI backend with CORS enabled.
 """
 
+import asyncio
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from routers import trends, forecast, weather, crops, risk, crops_list, msp
+from data.real_prices import fetch_all_crops_real, fetch_all_history
+
+TOP_DISTRICTS = ["Nashik", "Pune", "Nagpur", "Latur", "Aurangabad"]
+
+async def _warm_cache():
+    """Pre-fetch prices for top districts on startup so first requests are fast."""
+    try:
+        print("[startup] Warming price cache...")
+        await asyncio.gather(
+            *[fetch_all_crops_real(d) for d in TOP_DISTRICTS],
+            return_exceptions=True
+        )
+        print("[startup] Cache warm complete.")
+    except Exception as e:
+        print(f"[startup] Cache warm failed: {e}")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    asyncio.create_task(_warm_cache())
+    yield
 
 app = FastAPI(
+    lifespan=lifespan,
     title="KisanAI Crop Intelligence API",
     description=(
         "Backend API for the KisanAI Crop Intelligence Platform. "
