@@ -24,7 +24,7 @@ async def list_crops(district: Optional[str] = Query(None)):
     for crop in CROPS:
         live = real.get(crop)
 
-        if live and live.get("price", 0) > 0 and live.get("source") == "live":
+        if live and live.get("price", 0) > 0 and live.get("source") in ("live", "db_cache", "cloudflare"):
             live_crops.append({
                 "crop":       crop,
                 "price":      round(live["price"], 2),
