@@ -116,12 +116,22 @@ async def get_latest_price(crop: str, district: str = None) -> dict | None:
     """Get most recent price for a crop from DB."""
     conn = await get_conn()
     try:
-        row = await conn.fetchrow("""
-            SELECT * FROM crop_prices
-            WHERE crop = $1
-            ORDER BY fetched_at DESC
-            LIMIT 1
-        """, crop)
+        # Try with district first, fall back to any record for the crop
+        row = None
+        if district:
+            row = await conn.fetchrow("""
+                SELECT * FROM crop_prices
+                WHERE crop = $1 AND district ILIKE $2
+                ORDER BY fetched_at DESC
+                LIMIT 1
+            """, crop, f"%{district}%")
+        if not row:
+            row = await conn.fetchrow("""
+                SELECT * FROM crop_prices
+                WHERE crop = $1
+                ORDER BY fetched_at DESC
+                LIMIT 1
+            """, crop)
         if not row:
             return None
         return {

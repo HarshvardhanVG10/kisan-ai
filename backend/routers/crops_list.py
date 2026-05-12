@@ -36,7 +36,7 @@ async def list_crops(district: Optional[str] = Query(None)):
                 "date":       live.get("date", ""),
                 "commodity":  live.get("commodity", crop),
                 "tier":       live.get("tier", 1),
-                "source":     "live",
+                "source":     live.get("source", "live"),
                 # change_pct omitted — we don't have yesterday's real price cached
                 "change_pct": None,
             })
