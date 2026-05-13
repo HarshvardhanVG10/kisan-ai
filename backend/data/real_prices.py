@@ -199,15 +199,24 @@ async def fetch_price_history(
     if cache_key in _cache and (now - _cache_time.get(cache_key, 0)) < HISTORY_CACHE_TTL:
         return _cache[cache_key]
 
-    commodities = CROP_COMMODITY_MAP.get(crop, [crop])
+    # Try DB cache first (populated by Cloudflare Worker daily)
+    from data.db import get_price_history_from_db
+    best_result = await get_price_history_from_db(crop, days)
+    if best_result:
+        print(f"[real_prices] Using DB history cache for {crop}")
+        _cache[cache_key] = best_result
+        _cache_time[cache_key] = now
+        return best_result
 
-    best_result: list = []
+    # Fall back to live API only if DB has no history
+    commodities = CROP_COMMODITY_MAP.get(crop, [crop])
+    best_result = []
     for commodity in commodities:
         result = await _try_fetch_history(commodity, days)
         if len(result) > len(best_result):
             best_result = result
         if len(best_result) >= 7:
-            break  # Good enough — stop trying other spellings
+            break
 
     # Fall back to DB if live fetch returned nothing
     if not best_result:
