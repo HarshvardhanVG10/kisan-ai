@@ -62,9 +62,16 @@ async def fetch_real_price(crop: str, district: Optional[str] = None) -> Optiona
     if cache_key in _cache and (now - _cache_time.get(cache_key, 0)) < CACHE_TTL_SECONDS:
         return _cache[cache_key]
 
-    commodities = CROP_COMMODITY_MAP.get(crop, [crop])
+    # Try DB cache first (populated by Cloudflare Worker daily)
+    db_result = await get_latest_price(crop, district)
+    if db_result:
+        print(f"[real_prices] Using DB cache for {crop}")
+        _cache[cache_key] = db_result
+        _cache_time[cache_key] = now
+        return db_result
 
-    # Try live API first
+    # Fall back to live API only if DB has no data
+    commodities = CROP_COMMODITY_MAP.get(crop, [crop])
     for commodity in commodities:
         result = await _fetch_with_tiers(commodity, district)
         if result:
@@ -72,14 +79,6 @@ async def fetch_real_price(crop: str, district: Optional[str] = None) -> Optiona
             _cache_time[cache_key] = now
             await save_current_price(crop, result)
             return result
-
-    # Fall back to DB cache
-    db_result = await get_latest_price(crop, district)
-    if db_result:
-        print(f"[real_prices] Using DB cache for {crop}")
-        _cache[cache_key] = db_result
-        _cache_time[cache_key] = now
-        return db_result
 
     return None
 
